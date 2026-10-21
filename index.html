@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07111f">
+<title>JARVIS — Assistente Pessoal</title>
+<style>
+:root{color-scheme:dark;--bg:#07111f;--panel:#101f32;--line:#24415c;--blue:#4cc9f0;--text:#edf6ff;--muted:#a8bfd3}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 0,#12304b 0,#07111f 48%);font:16px system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text);min-height:100vh}
+main{max-width:850px;margin:auto;padding:24px 16px 48px}.brand{text-align:center;padding:18px 0 24px}.orb{width:76px;height:76px;border:2px solid var(--blue);border-radius:50%;margin:0 auto 12px;display:grid;place-items:center;box-shadow:0 0 30px #4cc9f044,inset 0 0 22px #4cc9f022;font-size:30px;color:var(--blue)}h1{letter-spacing:.22em;margin:0;font-size:clamp(25px,6vw,38px)}.subtitle{color:var(--muted);margin-top:8px}.notice{background:#352a16;border:1px solid #71552a;color:#ffe5a9;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.5;margin-bottom:16px}
+.card{background:#0d1b2bde;border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0;box-shadow:0 12px 28px #0002}.card h2{font-size:17px;margin:0 0 12px}.row{display:flex;gap:10px;flex-wrap:wrap}button,.filelabel,select{border:1px solid #315675;background:#132a40;color:var(--text);padding:11px 14px;border-radius:10px;font:inherit;cursor:pointer}button.primary{background:#0d789e;border-color:#4cc9f0;font-weight:700}button:disabled{opacity:.5;cursor:not-allowed}textarea,input[type=text]{width:100%;border:1px solid #315675;border-radius:10px;background:#071523;color:var(--text);padding:12px;font:inherit}textarea{min-height:90px;resize:vertical}.muted{color:var(--muted);font-size:13px;line-height:1.5}.reply{white-space:pre-wrap;background:#081522;border:1px solid #203b53;border-radius:10px;padding:13px;min-height:54px;line-height:1.55}.status{color:var(--blue);font-size:13px;margin-top:10px;min-height:18px}#preview{display:none;max-width:100%;max-height:320px;border-radius:12px;margin-top:12px}footer{text-align:center;color:#7892a8;font-size:12px;margin-top:24px}
+</style>
+</head>
+<body><main>
+<header class="brand"><div class="orb">✧</div><h1>J.A.R.V.I.S.</h1><div class="subtitle">Seu assistente pessoal · Protótipo gratuito</div></header>
+<div class="notice"><strong>Importante:</strong> esta é a primeira versão de interface. Ela já testa microfone, voz do navegador, fotos e frases de viagem, mas ainda não tem um modelo de IA conectado. Não envia fotos para análise nem responde perguntas abertas como uma IA completa.</div>
+<section class="card">
+<h2>◉ Conversar com o JARVIS</h2>
+<label class="muted" for="question">Digite uma mensagem ou use o microfone.</label>
+<textarea id="question" placeholder="Ex.: JARVIS, me ajude a planejar um passeio em Lisboa..."></textarea>
+<div class="row" style="margin-top:10px"><button id="mic" class="primary">🎙 Falar</button><button id="send">Enviar mensagem</button><button id="speak" disabled>🔊 Ouvir resposta</button></div>
+<div class="status" id="voiceStatus" aria-live="polite"></div>
+<h2 style="margin-top:18px">Resposta</h2><div id="answer" class="reply">Olá! Sou o JARVIS. Nesta versão inicial posso testar sua voz, falar respostas demonstrativas e ajudar com frases básicas de viagem.</div>
+</section>
+<section class="card">
+<h2>▧ Mostrar uma foto de um lugar</h2>
+<p class="muted">Escolha uma foto para visualizar aqui. A análise inteligente da imagem será adicionada numa etapa posterior.</p>
+<input id="photo" type="file" accept="image/*" capture="environment">
+<img id="preview" alt="Prévia da foto selecionada">
+</section>
+<section class="card">
+<h2>⇄ Modo intérprete — frases rápidas</h2>
+<p class="muted">Selecione o idioma e toque numa frase. Esta primeira versão usa um pequeno guia local, sem tradução livre por IA.</p>
+<div class="row"><select id="language" aria-label="Idioma"><option value="en">Inglês</option><option value="es">Espanhol</option><option value="fr">Francês</option><option value="it">Italiano</option></select></div>
+<div class="row" style="margin-top:10px"><button class="phrase" data-key="hello">Olá</button><button class="phrase" data-key="help">Preciso de ajuda</button><button class="phrase" data-key="bathroom">Onde fica o banheiro?</button><button class="phrase" data-key="bill">A conta, por favor</button><button class="phrase" data-key="water">Água, por favor</button><button class="phrase" data-key="taxi">Pode chamar um táxi?</button></div>
+<div id="translation" class="reply" style="margin-top:12px">A tradução aparecerá aqui.</div><div class="row" style="margin-top:10px"><button id="sayTranslation">🔊 Ouvir tradução</button></div>
+</section>
+<footer>JARVIS · Protótipo pessoal · Não use a tradução demonstrativa como única referência em emergências.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let lastSpoken='';
+const phrases={
+en:{hello:'Hello',help:'I need help',bathroom:'Where is the bathroom?',bill:'The bill, please',water:'Water, please',taxi:'Can you call a taxi?'},
+es:{hello:'Hola',help:'Necesito ayuda',bathroom:'¿Dónde está el baño?',bill:'La cuenta, por favor',water:'Agua, por favor',taxi:'¿Puede llamar un taxi?'},
+fr:{hello:'Bonjour',help:"J’ai besoin d’aide",bathroom:'Où sont les toilettes ?',bill:"L’addition, s’il vous plaît",water:"De l’eau, s’il vous plaît",taxi:'Pouvez-vous appeler un taxi ?'},
+it:{hello:'Ciao',help:'Ho bisogno di aiuto',bathroom:'Dov’è il bagno?',bill:'Il conto, per favore',water:'Acqua, per favore',taxi:'Può chiamare un taxi?'}
+};
+const langNames={en:'en-US',es:'es-ES',fr:'fr-FR',it:'it-IT'};
+function speak(text,lang='pt-BR'){if(!('speechSynthesis'in window)){ $('voiceStatus').textContent='Este navegador não oferece leitura de voz.';return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=1; speechSynthesis.speak(u);}
+function answerDemo(text){
+ const t=text.toLowerCase();
+ if(t.includes('olá')||t.includes('oi')||t.includes('bom dia')) return 'Olá! Estou pronto para ajudar. Esta versão ainda é um protótipo gratuito: para responder perguntas abertas e analisar fotos, precisamos conectar um modelo de IA gratuito ou executar um modelo no seu computador.';
+ if(t.includes('foto')||t.includes('lugar')||t.includes('local')) return 'Posso mostrar a foto na tela, mas ainda não consigo reconhecer o lugar nesta versão. Na próxima etapa vamos adicionar análise de imagem usando um modelo de IA.';
+ if(t.includes('viagem')||t.includes('viajar')||t.includes('roteiro')) return 'Vamos organizar sua viagem por etapas: destino, datas, orçamento e estilo de passeio. A pesquisa atualizada de atrações será adicionada depois; por enquanto, me diga o destino e as datas.';
+ if(t.includes('traduz')) return 'Abra o Modo intérprete abaixo e escolha o idioma. Esta versão contém algumas frases prontas; a tradução livre de voz será uma etapa futura.';
+ return 'Recebi sua mensagem: “'+text+'”. Esta interface ainda não está conectada a um modelo de IA, então não quero fingir que sei responder. Na próxima etapa adicionaremos um modelo gratuito, respeitando os limites e requisitos técnicos.';
+}
+$('send').addEventListener('click',()=>{const text=$('question').value.trim();if(!text)return;$('answer').textContent=answerDemo(text);lastSpoken=$('answer').textContent;$('speak').disabled=false;});
+$('speak').addEventListener('click',()=>speak(lastSpoken));
+$('mic').addEventListener('click',()=>{
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){$('voiceStatus').textContent='Reconhecimento de voz não disponível neste navegador. Tente o Google Chrome atualizado.';return;}
+ const r=new SR();r.lang='pt-BR';r.interimResults=false;r.maxAlternatives=1;
+ $('mic').disabled=true;$('voiceStatus').textContent='Estou ouvindo… fale agora.';
+ r.onresult=e=>{$('question').value=e.results[0][0].transcript;$('voiceStatus').textContent='Voz reconhecida. Preparando resposta demonstrativa…';$('send').click();speak(lastSpoken);};
+ r.onerror=e=>{$('voiceStatus').textContent='Não consegui reconhecer a fala ('+e.error+'). Verifique a permissão do microfone e a conexão.';};
+ r.onend=()=>{$('mic').disabled=false;if($('voiceStatus').textContent==='Estou ouvindo… fale agora.')$('voiceStatus').textContent='Microfone encerrado.';};
+ r.start();
+});
+$('photo').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const url=URL.createObjectURL(f);$('preview').src=url;$('preview').style.display='block';});
+document.querySelectorAll('.phrase').forEach(b=>b.addEventListener('click',()=>{$('translation').textContent=phrases[$('language').value][b.dataset.key];lastSpoken=$('translation').textContent;$('sayTranslation').dataset.lang=langNames[$('language').value];}));
+$('sayTranslation').addEventListener('click',()=>speak($('translation').textContent,$('sayTranslation').dataset.lang||'en-US'));
+</script></body></html>
